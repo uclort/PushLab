@@ -4,7 +4,7 @@ export default {
 	app: {
 		name: "PushLab",
 		identifier: "dev.pushlab.app",
-		version: "0.1.0",
+		version: "0.1.1",
 	},
 	build: {
 		mainProcess: "bun",
@@ -28,5 +28,6 @@ export default {
 	scripts: {
 		postBuild: "scripts/prepare-macos-bundle.ts",
 		postWrap: "scripts/prepare-macos-bundle.ts",
+		postPackage: "scripts/package-direct-dmg.ts",
 	},
 } satisfies ElectrobunConfig;
