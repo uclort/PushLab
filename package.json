@@ -1,0 +1,9 @@
+{
+	"name": "push-lab",
+	"version": "0.1.0",
+	"private": true,
+	"description": "A focused APNs debugging client built with Electrobun",
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
+}
