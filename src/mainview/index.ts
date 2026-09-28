@@ -223,7 +223,7 @@ async function loadPayloadHistory() {
 	select.innerHTML = "";
 	select.add(new Option(`历史消息（${payloadHistory.length}/50）`, ""));
 	for (const item of payloadHistory) select.add(new Option(historyDescription(item), item.id));
-	if (payloadHistory.length) select.add(new Option("清空历史消息…", "__clear__"));
+	resetClearButton($<HTMLButtonElement>("clear-payload-history"), payloadHistory.length > 0);
 }
 
 function deviceTokenDescription(item: DeviceTokenHistoryItem): string {
@@ -238,7 +238,40 @@ async function loadDeviceTokenHistory() {
 	select.innerHTML = "";
 	select.add(new Option(`Token 历史（${deviceTokenHistory.length}/10）`, ""));
 	for (const item of deviceTokenHistory) select.add(new Option(deviceTokenDescription(item), item.id));
-	if (deviceTokenHistory.length) select.add(new Option("清空 Token 历史…", "__clear__"));
+	resetClearButton($<HTMLButtonElement>("clear-device-token-history"), deviceTokenHistory.length > 0);
+}
+
+function resetClearButton(button: HTMLButtonElement, enabled: boolean) {
+	button.textContent = "清空";
+	button.dataset["confirming"] = "false";
+	button.disabled = !enabled;
+}
+
+async function clearHistory(
+	button: HTMLButtonElement,
+	clear: () => Promise<{ success: boolean }>,
+	reload: () => Promise<void>,
+) {
+	if (button.dataset["confirming"] !== "true") {
+		button.dataset["confirming"] = "true";
+		button.textContent = "确认清空";
+		window.setTimeout(() => {
+			if (button.dataset["confirming"] === "true") resetClearButton(button, true);
+		}, 3_000);
+		return;
+	}
+
+	button.dataset["confirming"] = "false";
+	button.disabled = true;
+	button.textContent = "清空中…";
+	try {
+		await clear();
+		await reload();
+		setConnectionState("success", "历史已清空");
+	} catch (error) {
+		resetClearButton(button, true);
+		setConnectionState("error", error instanceof Error ? error.message : "清空历史失败");
+	}
 }
 
 function applyPayloadHistory(item: PayloadHistoryItem) {
@@ -414,15 +447,6 @@ $<HTMLSelectElement>("payload-template").addEventListener("change", (event) => {
 });
 $<HTMLSelectElement>("device-token-history").addEventListener("change", async (event) => {
 	const select = event.target as HTMLSelectElement;
-	if (select.value === "__clear__") {
-		if (confirm("确定清空全部 Device Token 历史吗？")) {
-			await app.rpc!.request.clearDeviceTokenHistory({});
-			await loadDeviceTokenHistory();
-		} else {
-			select.value = "";
-		}
-		return;
-	}
 	const item = deviceTokenHistory.find(({ id }) => id === select.value);
 	if (item) {
 		$<HTMLTextAreaElement>("device-token").value = item.token;
@@ -433,17 +457,24 @@ $<HTMLSelectElement>("device-token-history").addEventListener("change", async (e
 });
 $<HTMLSelectElement>("payload-history").addEventListener("change", async (event) => {
 	const select = event.target as HTMLSelectElement;
-	if (select.value === "__clear__") {
-		if (confirm("确定清空全部 Payload 历史消息吗？")) {
-			await app.rpc!.request.clearPayloadHistory({});
-			await loadPayloadHistory();
-		} else {
-			select.value = "";
-		}
-		return;
-	}
 	const item = payloadHistory.find(({ id }) => id === select.value);
 	if (item) applyPayloadHistory(item);
+});
+$<HTMLButtonElement>("clear-device-token-history").addEventListener("click", (event) => {
+	const button = event.currentTarget as HTMLButtonElement;
+	void clearHistory(
+		button,
+		() => app.rpc!.request.clearDeviceTokenHistory({}),
+		loadDeviceTokenHistory,
+	);
+});
+$<HTMLButtonElement>("clear-payload-history").addEventListener("click", (event) => {
+	const button = event.currentTarget as HTMLButtonElement;
+	void clearHistory(
+		button,
+		() => app.rpc!.request.clearPayloadHistory({}),
+		loadPayloadHistory,
+	);
 });
 $("format-json").addEventListener("click", () => {
 	try {

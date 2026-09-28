@@ -70,8 +70,13 @@ input:focus, textarea:focus, select:focus { border-color: #9bb0e6; box-shadow: 0
 .bundle-display { margin-top: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: #f8fafd; }
 .bundle-display output { display: block; margin-top: 6px; color: var(--text); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
 .target-card textarea { min-height: 64px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.token-history-picker { margin-top: 7px; }
+.token-history-picker { margin-top: 7px; display: grid; grid-template-columns: 1fr auto; gap: 7px; }
 .token-history-picker select { margin-top: 0; }
+.history-clear-button { height: 33px; padding: 0 11px; border: 1px solid var(--border); border-radius: 8px; background: #fafbfe; color: var(--muted); cursor: pointer; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.token-history-picker .history-clear-button { height: 39px; }
+.history-clear-button:hover:not(:disabled) { color: var(--danger); border-color: #efc6c8; background: #fff7f7; }
+.history-clear-button[data-confirming="true"] { color: #fff; border-color: var(--danger); background: var(--danger); }
+.history-clear-button:disabled { opacity: .45; cursor: not-allowed; }
 .target-help { margin-top: 15px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; overflow: hidden; }
 .target-help summary { padding: 10px 12px; color: #647087; cursor: pointer; font-size: 11px; font-weight: 650; list-style-position: inside; }
 .target-help[open] summary { border-bottom: 1px solid var(--border); background: #f5f7fb; }
@@ -142,7 +147,7 @@ kbd { padding: 3px 6px; border-radius: 5px; background: rgba(255,255,255,.16); f
 	:root { --bg: #11151d; --surface: rgba(27,33,44,.92); --surface-strong: #252c38; --border: #343c4a; --text: #edf2fa; --muted: #8f9aab; --accent-soft: #1d2e59; --shadow: 0 8px 28px rgba(0,0,0,.2); }
 	.topbar, .sendbar { background: rgba(20,25,34,.86); }
 	.env-switch, .auth-tabs { background: #171c25; }
-	input, textarea, select, .file-picker, .secondary-button, .format-button { background: #171d27; border-color: #3a4353; }
+	input, textarea, select, .file-picker, .secondary-button, .format-button, .history-clear-button { background: #171d27; border-color: #3a4353; }
 	label, .field-label { color: #aeb8c7; }
 	.result-summary code, .size-badge { background: #242b37; }
 }

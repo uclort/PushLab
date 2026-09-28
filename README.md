@@ -136,7 +136,7 @@ hutch run build
 
 请前往 [Releases](../../releases) 下载 macOS arm64 版本。
 
-当前 Release（v0.1.1 起为标准拖拽安装包，不再显示 Electrobun Setup 弹窗）：
+当前 Release（v0.1.2 修复历史消息和 Token 历史无法清空的问题）：
 
 - `PushLab-macos-arm64.dmg`
 

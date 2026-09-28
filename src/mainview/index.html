@@ -65,6 +65,7 @@
 					<label>Device Token<textarea id="device-token" rows="3" spellcheck="false" placeholder="粘贴设备 Token，自动移除空格和尖括号"></textarea></label>
 					<div class="token-history-picker">
 						<select id="device-token-history" aria-label="Device Token 历史"><option value="">Token 历史</option></select>
+						<button id="clear-device-token-history" class="history-clear-button" disabled>清空</button>
 					</div>
 					<div class="field-grid two">
 						<label>Push Type<select id="push-type"><option>alert</option><option>background</option><option>voip</option><option>liveactivity</option><option>complication</option><option>fileprovider</option><option>mdm</option><option>pushtotalk</option><option>location</option></select></label>
@@ -92,6 +93,7 @@
 						<div class="payload-actions">
 							<select id="payload-template" aria-label="Payload 模板"><option value="default">默认模板</option><option value="simple">仅通知内容</option><option value="background">后台静默推送</option><option value="liveactivity">Live Activity 更新</option><option value="custom" disabled>自定义 / 历史</option></select>
 							<select id="payload-history" aria-label="Payload 历史消息"><option value="">历史消息</option></select>
+							<button id="clear-payload-history" class="history-clear-button" disabled>清空</button>
 							<button id="format-json" class="format-button" title="格式化 JSON">格式化</button>
 						</div>
 					</div>
