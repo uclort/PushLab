@@ -90,6 +90,7 @@ APNs 调试通常发生在 iOS / macOS App 开发过程中。开发者需要在�
 - 保存非敏感配置
 - 私钥内容与证书密码不持久化
 - 自定义 PushLab 应用图标
+- 集成 Sparkle 更新框架，可通过“PushLab”菜单中的“检查更新…”手动检查新版本
 
 ## 项目结构
 
@@ -132,17 +133,26 @@ hutch run test
 hutch run build
 ```
 
+生成 Sparkle Appcast：
+
+```bash
+hutch run appcast
+```
+
+Sparkle 使用 `dev.pushlab.app` 钥匙串账户中的 EdDSA 私钥签名更新包；发布新版本前需先构建 DMG、生成 `appcast.xml`，再将 DMG 与 Appcast 一起上传到 GitHub Release。
+
 ## 下载
 
 请前往 [Releases](../../releases) 下载 macOS arm64 版本。
 
-当前 Release（v0.1.2 修复历史消息和 Token 历史无法清空的问题）：
+当前 Release（v0.1.3 起集成 Sparkle 更新框架）：
 
 - `PushLab-macos-arm64.dmg`
 
 系统要求：
 
 - macOS Apple Silicon
+- macOS 12.0 或更高版本
 - 首次使用钥匙串证书发送时，macOS 可能会弹出钥匙串授权窗口
 
 ## 说明

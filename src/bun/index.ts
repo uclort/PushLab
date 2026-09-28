@@ -107,6 +107,7 @@ ApplicationMenu.setApplicationMenu([
 		label: "PushLab",
 		submenu: [
 			{ label: "关于 PushLab", role: "about" },
+			{ label: "检查更新…", action: "check-for-updates" },
 			{ type: "separator" },
 			{ label: "隐藏 PushLab", role: "hide" },
 			{ label: "隐藏其他应用", role: "hideOthers" },
@@ -251,4 +252,39 @@ ApplicationMenu.on("application-menu-clicked", (event) => {
 	const action = (event as { data?: { action?: string } }).data?.action;
 	if (action === "quit-app") app.quit();
 	if (action === "close-window") mainWindow.close();
+	if (action === "check-for-updates") {
+		const applicationBundle = dirname(dirname(dirname(process.execPath)));
+		const updater = join(
+			applicationBundle,
+			"Contents",
+			"Library",
+			"PushLabUpdater.app",
+			"Contents",
+			"MacOS",
+			"PushLabUpdater",
+		);
+		if (!existsSync(updater)) {
+			void Utils.showMessageBox({
+				type: "error",
+				title: "无法检查更新",
+				message: "未找到 Sparkle 更新组件",
+				detail: updater,
+			});
+			return;
+		}
+		try {
+			const child = Bun.spawn([updater, applicationBundle], {
+				detached: true,
+				stdio: ["ignore", "ignore", "ignore"],
+			});
+			child.unref();
+		} catch (error) {
+			void Utils.showMessageBox({
+				type: "error",
+				title: "无法检查更新",
+				message: "Sparkle 更新组件启动失败",
+				detail: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
 });

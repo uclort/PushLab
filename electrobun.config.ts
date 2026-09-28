@@ -4,7 +4,7 @@ export default {
 	app: {
 		name: "PushLab",
 		identifier: "dev.pushlab.app",
-		version: "0.1.2",
+		version: "0.1.3",
 	},
 	build: {
 		mainProcess: "bun",

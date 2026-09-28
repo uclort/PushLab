@@ -4,6 +4,7 @@ export default {
 		start: ["hutch", "electrobun", "dev"],
 		dev: ["hutch", "electrobun", "dev", "--watch"],
 		build: ["hutch", "electrobun", "build", "--env=stable"],
+		appcast: ["hutch", "scripts/generate-sparkle-appcast.ts"],
 		test: ["hutch", "test", "src/bun/apns.test.ts"],
 	},
 	electrobun: {
