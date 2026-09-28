@@ -128,12 +128,25 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
           </div>
 
           <details class="help-drawer">
-            <summary>查看投递参数说明</summary>
-            <div class="help-grid">
-              <div><b>环境</b><span>开发包 Token 对应 Sandbox；TestFlight 与 App Store 包对应 Production。</span></div>
-              <div><b>Priority</b><span>可见通知通常使用 10；background 必须使用 5。</span></div>
-              <div><b>Collapse ID</b><span>相同 ID 的待投递消息会被最新消息替换。</span></div>
-              <div><b>Expiration</b><span>0 表示离线不保留；未来时间戳表示保留至该时刻。</span></div>
+            <summary>查看全部参数与取值说明</summary>
+            <div class="help-list">
+              <div><b>Device Token</b><span>64 位十六进制设备令牌；粘贴后自动删除空格和尖括号。</span></div>
+              <div><b>环境</b><span>开发：本地开发包和 Sandbox；生产：TestFlight、App Store 包和 Production。</span></div>
+              <div><b>Push Type</b><span>指定系统投递行为；Payload 结构和后台限制也会随之变化。</span></div>
+              <div class="help-values">
+                <b>alert</b><span>可见通知，显示提醒、横幅或通知中心内容。</span>
+                <b>background</b><span>后台唤醒，用户不可见；Payload 需包含 content-available，Priority 必须为 5。</span>
+                <b>voip</b><span>VoIP 呼叫控制；要求使用专用 VoIP 证书，Payload 上限 5 KB。</span>
+                <b>liveactivity</b><span>实时活动更新；Payload 需包含 timestamp、event 和 content-state。</span>
+                <b>complication</b><span>表盘复杂功能更新。</span>
+                <b>fileprovider</b><span>File Provider 扩展触发的文件同步通知。</span>
+                <b>mdm</b><span>MDM 设备管理指令通知。</span>
+                <b>pushtotalk</b><span>Push-to-Talk 扩展的通话或频道通知。</span>
+                <b>location</b><span>位置相关触发通知。</span>
+              </div>
+              <div><b>Priority</b><span>10：立即投递，适合可见通知；5：节能模式，适合后台和按系统条件投递。background 只允许 5。</span></div>
+              <div><b>Collapse ID</b><span>可选，1 到 64 字符；相同 ID 的待投递消息会被最新一条替换。</span></div>
+              <div><b>Expiration</b><span>0 表示设备离线后不保留；留空表示由 APNs 默认处理；填 Unix 秒级时间戳表示保留到该时刻。</span></div>
             </div>
           </details>
         </article>

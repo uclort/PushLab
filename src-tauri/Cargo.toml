@@ -1,6 +1,6 @@
 [package]
 name = "pushlab"
-version = "0.2.0"
+version = "0.2.1"
 description = "PushLab APNs 调试工具"
 authors = ["Uclort"]
 edition = "2024"

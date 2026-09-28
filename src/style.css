@@ -75,7 +75,7 @@ select {
   z-index: 20;
   top: 0;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   min-height: 88px;
   padding: 14px 32px;
@@ -711,30 +711,48 @@ dd {
   border-bottom: 1px solid var(--line);
 }
 
-.help-grid {
+.help-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 14px;
-  padding: 7px 12px 10px;
+  gap: 0;
+  padding: 4px 12px 10px;
 }
 
-.help-grid div {
+.help-list > div {
   display: grid;
-  grid-template-columns: 62px 1fr;
-  gap: 6px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(215, 225, 239, 0.72);
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.help-grid b {
+.help-list > div:last-child {
+  border-bottom: 0;
+}
+
+.help-list b {
   color: var(--primary);
   font-size: 9px;
+  line-height: 1.5;
 }
 
-.help-grid span {
+.help-list span {
   color: var(--muted);
   font-size: 9px;
   line-height: 1.55;
+}
+
+.help-values {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.help-values b {
+  margin-top: 3px;
+}
+
+.help-values b:first-child {
+  margin-top: 0;
 }
 
 .payload-panel {
