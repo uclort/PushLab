@@ -4,6 +4,20 @@ PushLab 是一个基于 Tauri 2 的 macOS APNs 推送调试工具。前端使用
 
 项目已于 2026 年 9 月 28 日完成桌面框架重建。新工程不包含 Electron、Electrobun、Bun 主进程、Hutch、Sparkle、旧 RPC 或旧原生辅助库代码。
 
+## 界面预览
+
+### 证书文件
+
+![Tauri 版证书文件认证界面](docs/images/pushlab-tauri-certificate.png)
+
+### macOS 钥匙串
+
+![Tauri 版 macOS 钥匙串认证界面](docs/images/pushlab-tauri-keychain.png)
+
+### Auth Key（.p8）
+
+![Tauri 版 Auth Key 认证界面](docs/images/pushlab-tauri-auth-key.png)
+
 ## 功能
 
 ### 三种 APNs 认证方式
