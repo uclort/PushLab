@@ -2,6 +2,20 @@
 
 **PushLab** 是一个基于 [Electrobun](https://github.com/blackboardsh/electrobun) 的 macOS APNs 推送调试工具，用于向指定设备发送 Apple Push Notification Service 测试推送，并快速定位凭据、环境、Token、Payload 或请求参数问题。
 
+## 界面预览
+
+### 证书文件
+
+![PushLab 证书文件认证界面](docs/images/pushlab-certificate.png)
+
+### macOS 钥匙串
+
+![PushLab macOS 钥匙串认证界面](docs/images/pushlab-keychain.png)
+
+### Auth Key（.p8）
+
+![PushLab Auth Key 认证界面](docs/images/pushlab-auth-key.png)
+
 ## 背景
 
 APNs 调试通常发生在 iOS / macOS App 开发过程中。开发者需要在开发环境、生产环境、不同 Bundle ID、不同设备 Token、不同 Payload 结构之间反复切换，并确认客户端证书或 Auth Key 是否可用。
