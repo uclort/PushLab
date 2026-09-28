@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PushLab",
+  "version": "0.2.0",
+  "identifier": "dev.pushlab.app",
+  "build": {
+    "beforeDevCommand": "npm run dev:web",
+    "beforeBuildCommand": "npm run build:web",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PushLab · APNs 调试工具",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 920,
+        "minHeight": 700,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost https://github.com https://api.github.com"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "copyright": "Copyright © 2026 PushLab",
+    "category": "DeveloperTool",
+    "shortDescription": "APNs 推送调试工具",
+    "longDescription": "支持 Auth Key、证书文件和 macOS 钥匙串的 APNs 推送调试工具。",
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "-"
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/uclort/PushLab/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIwMzdBQTY1MTJENzhCRjAKUldUd2k5Y1NaYW8zSUZyN0hMNnh5dFVaWlc3NXJiUS9tQjZ5RDg4R2NWOWdSdHI5ektCTTUxSGQK",
+      "requireSignedVersion": true
+    }
+  }
+}

@@ -1,0 +1,52 @@
+name: 发布 PushLab
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: 构建 macOS Apple Silicon
+    runs-on: macos-14
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: 安装前端依赖
+        run: npm ci
+
+      - name: 执行检查与测试
+        run: |
+          npm run check
+          npm test
+
+      - name: 构建并发布
+        uses: tauri-apps/tauri-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tauriScript: npm run tauri
+          tagName: v__VERSION__
+          releaseName: "PushLab v__VERSION__"
+          releaseBody: "请查看 Release Assets 下载 PushLab。"
+          releaseDraft: true
+          prerelease: false
+          uploadUpdaterJson: true
+          args: --target aarch64-apple-darwin

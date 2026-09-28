@@ -1,8 +1,14 @@
-.hutch/
 node_modules/
-build/
 dist/
+src-tauri/target/
+src-tauri/gen/
 artifacts/
 *.tsbuildinfo
 
 *.dmg
+*.app.tar.gz
+*.app.tar.gz.sig
+latest.json
+.env
+.env.*
+!.env.example

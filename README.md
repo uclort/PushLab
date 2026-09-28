@@ -1,176 +1,159 @@
 # PushLab
 
-**PushLab** 是一个基于 [Electrobun](https://github.com/blackboardsh/electrobun) 的 macOS APNs 推送调试工具，用于向指定设备发送 Apple Push Notification Service 测试推送，并快速定位凭据、环境、Token、Payload 或请求参数问题。
+PushLab 是一个基于 Tauri 2 的 macOS APNs 推送调试工具。前端使用 TypeScript + Vite，系统能力、凭据读取、APNs HTTP/2 请求和本地持久化全部由 Rust 后端提供。
 
-## 界面预览
-
-### 证书文件
-
-![PushLab 证书文件认证界面](docs/images/pushlab-certificate.png)
-
-### macOS 钥匙串
-
-![PushLab macOS 钥匙串认证界面](docs/images/pushlab-keychain.png)
-
-### Auth Key（.p8）
-
-![PushLab Auth Key 认证界面](docs/images/pushlab-auth-key.png)
-
-## 背景
-
-APNs 调试通常发生在 iOS / macOS App 开发过程中。开发者需要在开发环境、生产环境、不同 Bundle ID、不同设备 Token、不同 Payload 结构之间反复切换，并确认客户端证书或 Auth Key 是否可用。
-
-本项目参考了开源工具 [SmartPush](https://github.com/shaojiankui/SmartPush) 的核心工作流，重新实现为现代跨平台桌面应用架构。SmartPush 是一个经典且实用的 macOS APNs 调试工具，其原实现基于 AppKit、Keychain 和 `NSURLSession`，详细迁移分析和核心链路拆解见 [`docs/SMARTPUSH_ANALYSIS.md`](docs/SMARTPUSH_ANALYSIS.md)。
-
-## 参考项目
-
-- [SmartPush](https://github.com/shaojiankui/SmartPush)
-  - 核心参考项目，提供 APNs 推送调试的核心工作流和证书使用思路。
-- [Electrobun](https://github.com/blackboardsh/electrobun)
-  - 本项目使用的桌面应用框架，负责窗口、WebView、原生菜单、构建与打包。
+项目已于 2026 年 9 月 28 日完成桌面框架重建。新工程不包含 Electron、Electrobun、Bun 主进程、Hutch、Sparkle、旧 RPC 或旧原生辅助库代码。
 
 ## 功能
 
-### 认证方式
+### 三种 APNs 认证方式
 
-- **macOS 钥匙串**
-  - 自动读取包含私钥的 Apple 推送证书
-  - 显示证书名称、环境、Bundle ID、Team ID、组织、创建时间、过期时间和指纹
-  - 直接使用钥匙串中的证书身份完成 TLS 客户端认证
-  - 私钥不导出、不持久化
-- **证书文件**
-  - 支持 `.p12` / `.pfx` / `.pem` / `.cer`
-  - 支持独立私钥文件
-  - 支持证书密码
-  - 显示证书关键信息
-- **Auth Key**
-  - 支持 `.p8`
-  - 支持 Team ID / Key ID
-  - 使用 ES256 生成 Provider Token
+- Auth Key（`.p8`）
+  - Team ID、Key ID、Bundle ID
+  - ES256 Provider Token
+  - 私钥只在发送时读取，不持久化内容
+- macOS 钥匙串
+  - 直接枚举包含私钥的 Apple 推送身份
+  - 显示 Bundle ID、Team ID、组织、签发者、有效期和指纹
+  - 使用 Security.framework 导出短生命周期的内存 PKCS#12 身份
+- 证书文件
+  - 支持 `.p12`、`.pfx`、`.pem`、`.cer`、`.crt`
+  - 支持独立 `.key` / `.pem` 私钥
+  - 支持证书和加密私钥密码
 
-### 推送配置
+### 推送与诊断
 
-- APNs 开发环境 / 生产环境切换
-- Bundle ID 自动从证书反显，不允许手动编辑，避免误改导致发送失败
-- Device Token 自动清理空格和尖括号
-- Device Token 历史记录，最多 10 条，支持清空
-- Push Type：
-  - `alert`
-  - `background`
-  - `voip`
-  - `liveactivity`
-  - `complication`
-  - `fileprovider`
-  - `mdm`
-  - `pushtotalk`
-  - `location`
-- Priority 5 / 10
-- Collapse ID
-- Expiration
-
-### Payload
-
-- 默认模板
-- 后台静默推送模板
-- Live Activity 更新模板
-- JSON 格式化
-- Payload 大小检查
-  - `alert`：4 KB
-  - `voip`：5 KB
-- 自动校验 JSON 和 `aps` 结构
-- 保存最近 50 条 Payload 历史
-- 历史去重，重复 Payload 移动到顶部
-- 选择历史后恢复对应推送配置
-- 支持清空历史
-
-### 发送结果
-
-- HTTP 状态码
-- APNs ID
-- APNs Host
-- 请求耗时
-- 常见 APNs 错误类型
-- 错误原因
-- 建议处理方式
-- 本地请求失败与 APNs 错误分类展示
-- 网络超时单独分类提示
-
-### 其他
-
+- APNs 开发 / 生产环境
 - HTTP/2 直连 APNs
-- 中文原生菜单和编辑菜单
-- 右键编辑菜单
-- 空白区域屏蔽默认 WebView 右键菜单
-- 保存非敏感配置
-- 私钥内容与证书密码不持久化
-- 自定义 PushLab 应用图标
-- 集成 Sparkle 更新框架，可通过“PushLab”菜单中的“检查更新…”手动检查新版本
+- `alert`、`background`、`voip`、`liveactivity` 等 Push Type
+- Priority、Collapse ID、Expiration
+- Device Token 自动清理
+- Payload JSON 校验、格式化与大小限制
+- 常见 APNs 错误原因和处理建议
+- APNs ID、Host、状态码和耗时
 
-## 项目结构
+### 本地体验
+
+- 最近 10 条 Device Token 历史
+- 最近 50 条 Payload 历史
+- 非敏感配置自动保存
+- 证书密码和私钥内容不持久化
+- 中文 macOS 原生菜单
+- `⌘ Enter` 快捷发送
+- Tauri 签名更新包与 GitHub Release 更新检查
+
+## 架构
 
 ```text
-src/
-├── bun/           # 主进程
-│   ├── apns.ts    # APNs HTTP/2 请求、TLS、认证与校验
-│   ├── keychain.ts # macOS 钥匙串证书枚举
-│   └── index.ts   # 窗口、菜单、RPC、历史记录
-├── mainview/      # WebView UI
-│   ├── index.ts   # 页面逻辑
-│   ├── index.html # 页面结构
-│   └── index.css  # 页面样式
-└── shared/        # 共享类型和错误映射
+PushLab/
+├── src/                         # 全新 WebView 前端
+│   ├── main.ts                  # 页面状态、Tauri Command、交互
+│   ├── style.css                # 全新视觉系统
+│   └── types.ts                 # 前端数据契约
+├── src-tauri/
+│   ├── src/
+│   │   ├── apns.rs              # APNs 校验、JWT、HTTP/2、TLS
+│   │   ├── certificate.rs       # X.509 / Auth Key 检查
+│   │   ├── keychain.rs          # Security.framework 钥匙串接入
+│   │   ├── storage.rs           # 设置与历史记录
+│   │   ├── error_guide.rs       # APNs 错误解释
+│   │   ├── models.rs            # Rust 数据模型
+│   │   └── lib.rs               # Tauri Command、插件、原生菜单
+│   ├── capabilities/            # Tauri 权限边界
+│   └── tauri.conf.json          # 窗口、Bundle、Updater 配置
+├── scripts/
+│   ├── setup-updater-key.mjs    # 初始化本地更新签名密钥
+│   └── tauri-build.mjs          # 从钥匙串加载签名信息并构建
+└── .github/workflows/release.yml
 ```
+
+## 环境要求
+
+- macOS 12 或更高版本
+- Node.js 20 或更高版本
+- Rust 1.90 或更高版本
+- Xcode Command Line Tools
 
 ## 开发
 
 安装依赖：
 
 ```bash
-hutch install
+npm install
 ```
 
-启动开发模式：
+启动 Tauri 开发模式：
 
 ```bash
-hutch run dev
+npm run dev
 ```
 
-运行测试：
+静态检查：
 
 ```bash
-hutch run test
+npm run check
 ```
 
-构建 macOS arm64 版本：
+运行 Rust 测试：
 
 ```bash
-hutch run build
+npm test
 ```
 
-生成 Sparkle Appcast：
+## 构建
+
+第一次在本机生成可更新的 Release 包前，初始化 Tauri Updater 签名密钥：
 
 ```bash
-hutch run appcast
+npm run setup:updater
 ```
 
-Sparkle 使用 `dev.pushlab.app` 钥匙串账户中的 EdDSA 私钥签名更新包；发布新版本前需先构建 DMG、生成 `appcast.xml`，再将 DMG 与 Appcast 一起上传到 GitHub Release。
+该命令会：
 
-## 下载
+- 将私钥保存到 `~/.tauri/pushlab-updater.key`
+- 将私钥密码保存到 macOS 钥匙串的 `PushLab.TauriUpdater` 服务
+- 将公钥写入 `src-tauri/tauri.conf.json`
 
-请前往 [Releases](../../releases) 下载 macOS arm64 版本。
+之后执行：
 
-当前 Release（v0.1.3 起集成 Sparkle 更新框架）：
+```bash
+npm run build
+```
 
-- `PushLab-macos-arm64.dmg`
+产物位于：
 
-系统要求：
+```text
+src-tauri/target/release/bundle/
+```
 
-- macOS Apple Silicon
-- macOS 12.0 或更高版本
-- 首次使用钥匙串证书发送时，macOS 可能会弹出钥匙串授权窗口
+包括 `.app`、`.dmg`、更新归档和 `.sig` 签名文件。
 
-## 说明
+## GitHub Release
 
-- 单独 `.cer` 文件通常不包含私钥，需要同时选择对应 `.key` / `.pem` 私钥文件。
-- macOS 钥匙串模式只在 macOS 上可用。
-- 本项目仅用于开发和调试 APNs，不提供未经授权批量发送能力。
+推送 `v*` 标签会触发 `.github/workflows/release.yml`。仓库需要配置：
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+`TAURI_SIGNING_PRIVATE_KEY` 的值是 `~/.tauri/pushlab-updater.key` 文件内容。工作流会构建 macOS Apple Silicon 包、创建 GitHub Release，并上传 Tauri Updater 使用的 `latest.json`。
+
+## 用户数据兼容
+
+应用标识保持为 `dev.pushlab.app`，设置与历史记录继续使用以下文件名：
+
+- `push-lab-settings.json`
+- `push-lab-payload-history.json`
+- `push-lab-device-token-history.json`
+
+首次读取时，Tauri 会在新数据目录不存在对应文件的前提下，依次从旧版 `stable`、`dev` 数据目录迁移。已有 Tauri 数据不会被覆盖，因此旧版本保存的非敏感配置和历史记录可以继续使用。
+
+本地构建默认使用 ad-hoc 签名，适合开发、测试和本机运行。对外分发仍需配置 Apple Developer ID Application 证书，并完成 Apple notarization（公证）。
+
+正式发布时可通过 `APPLE_SIGNING_IDENTITY` 覆盖配置中的 ad-hoc 身份，同时在 CI 导入 Developer ID Application 证书，并配置 `APPLE_ID`、`APPLE_PASSWORD`、`APPLE_TEAM_ID`，或等价的 App Store Connect API Key 公证凭据。
+
+## 安全说明
+
+- PushLab 仅用于开发和调试，不提供批量推送能力。
+- `.p8`、私钥、证书密码不会写入设置文件。
+- 钥匙串身份导出仅存在于进程内存中，并使用随机临时密码保护。
+- 发布签名私钥不进入 Git 仓库。

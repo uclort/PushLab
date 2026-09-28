@@ -1,0 +1,44 @@
+[package]
+name = "pushlab"
+version = "0.2.0"
+description = "PushLab APNs 调试工具"
+authors = ["Uclort"]
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "pushlab_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.0", features = [] }
+
+[dependencies]
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+http = "1"
+jsonwebtoken = { version = "10.4.0", default-features = false, features = ["rust_crypto", "use_pem"] }
+pem = "3"
+reqwest = { version = "0.12.28", default-features = false, features = ["http2", "json", "native-tls", "rustls-tls-native-roots", "system-proxy"] }
+security-framework = "3.7.0"
+security-framework-sys = "2.15.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.10"
+tauri = { version = "2.12.0", features = [] }
+tauri-plugin-dialog = "2.8.0"
+tauri-plugin-process = "2.3.1"
+tauri-plugin-updater = "2.13.0"
+tempfile = "3"
+thiserror = "2"
+uuid = { version = "1.26.1", features = ["v4", "serde"] }
+x509-parser = "0.18.1"
+
+[dev-dependencies]
+p256 = { version = "0.13", features = ["pkcs8", "pem"] }
+
+[profile.release]
+# Homebrew Rust 1.98 在 macOS 27 上剥离过程宏 dylib 时会生成损坏的 LINKEDIT。
+strip = false
