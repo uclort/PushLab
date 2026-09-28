@@ -43,6 +43,13 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
           <span class="status-dot"></span>
           <div><strong>待机</strong><small>等待发送任务</small></div>
         </div>
+        <div id="update-progress" class="update-progress hidden" aria-live="polite">
+          <div class="update-progress-text">
+            <strong id="update-progress-title">下载更新</strong>
+            <small id="update-progress-detail">正在连接更新服务</small>
+          </div>
+          <div class="update-progress-bar"><span id="update-progress-fill"></span></div>
+        </div>
       </div>
     </header>
 
@@ -676,9 +683,7 @@ async function checkForUpdates(): Promise<void> {
       { title: "发现新版本", kind: "info", okLabel: "安装更新", cancelLabel: "稍后" },
     );
     if (!accepted) return;
-    setConnectionState("sending", "下载更新", `正在安装 PushLab ${update.version}`);
-    await update.downloadAndInstall();
-    await relaunch();
+    await installUpdate(update);
   } catch (error) {
     const errorText = String(error);
     const missingManifest =
@@ -693,6 +698,52 @@ async function checkForUpdates(): Promise<void> {
     );
   } finally {
     checkingUpdate = false;
+  }
+}
+
+function formatBytes(value: number): string {
+  if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(0, Math.round(value / 1024))} KB`;
+}
+
+async function installUpdate(update: NonNullable<Awaited<ReturnType<typeof check>>>): Promise<void> {
+  const progress = $("update-progress");
+  const fill = $("update-progress-fill");
+  const title = $("update-progress-title");
+  const detail = $("update-progress-detail");
+  progress.classList.remove("hidden");
+  fill.style.width = "0%";
+  fill.classList.remove("indeterminate");
+  title.textContent = "下载更新";
+  detail.textContent = `PushLab ${update.version} · 正在连接更新服务`;
+  let received = 0;
+  let total = 0;
+  try {
+    await update.downloadAndInstall((event) => {
+      if (event.event === "Started") {
+        total = event.data.contentLength ?? 0;
+        detail.textContent = total
+          ? `PushLab ${update.version} · 0% · 0 B / ${formatBytes(total)}`
+          : `PushLab ${update.version} · 正在下载`;
+      } else if (event.event === "Progress") {
+        received += event.data.chunkLength;
+        const percent = total ? Math.min(100, Math.round((received / total) * 100)) : null;
+        fill.style.width = percent === null ? "100%" : `${percent}%`;
+        fill.classList.toggle("indeterminate", percent === null);
+        detail.textContent = percent === null
+          ? `PushLab ${update.version} · 已下载 ${formatBytes(received)}`
+          : `PushLab ${update.version} · ${percent}% · ${formatBytes(received)} / ${formatBytes(total)}`;
+      } else {
+        fill.style.width = "100%";
+        fill.classList.remove("indeterminate");
+        title.textContent = "安装更新";
+        detail.textContent = `PushLab ${update.version} · 准备重新启动`;
+      }
+    });
+    await relaunch();
+  } catch (error) {
+    progress.classList.add("hidden");
+    throw error;
   }
 }
 
