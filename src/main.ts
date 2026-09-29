@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask, message, open } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
@@ -20,6 +21,7 @@ import type {
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="app-shell">
     <header class="masthead">
+      <div class="window-drag-region" data-tauri-drag-region aria-hidden="true"></div>
       <div class="brand">
         <div class="brand-mark">
           <img src="/pushlab-icon.png" alt="" />
@@ -226,6 +228,30 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         </div>
 
         <div class="preferences-content">
+          <div class="preferences-theme-section">
+            <div class="preferences-section-heading">
+              <b>外观模式</b>
+              <span>同时控制 App 内容与 macOS 窗口外观</span>
+            </div>
+            <div class="theme-mode-grid" role="group" aria-label="外观模式">
+              <button type="button" class="theme-mode-option" data-color-mode="system">
+                <span class="theme-preview theme-preview-system"><i></i><i></i></span>
+                <strong>跟随系统</strong>
+                <small>随 macOS 自动切换</small>
+              </button>
+              <button type="button" class="theme-mode-option" data-color-mode="light">
+                <span class="theme-preview theme-preview-light"><i></i></span>
+                <strong>浅色</strong>
+                <small>始终使用明亮外观</small>
+              </button>
+              <button type="button" class="theme-mode-option" data-color-mode="dark">
+                <span class="theme-preview theme-preview-dark"><i></i></span>
+                <strong>深色</strong>
+                <small>始终使用深色外观</small>
+              </button>
+            </div>
+          </div>
+
           <div class="preferences-font-grid">
             <label>界面字体
               <select id="ui-font">
@@ -299,7 +325,10 @@ const $ = <T extends HTMLElement>(id: string): T => {
   return element as T;
 };
 
+type ColorMode = "system" | "light" | "dark";
+
 type AppearancePreferences = {
+  colorMode: ColorMode;
   uiFont: "avenir" | "pingfang" | "system";
   headingFont: "avenir-condensed" | "avenir" | "pingfang";
   monoFont: "sfmono" | "menlo" | "monaco";
@@ -310,6 +339,7 @@ type AppearancePreferences = {
 
 const appearanceStorageKey = "pushlab-appearance-preferences";
 const defaultAppearancePreferences: AppearancePreferences = {
+  colorMode: "system",
   uiFont: "avenir",
   headingFont: "avenir-condensed",
   monoFont: "sfmono",
@@ -336,6 +366,17 @@ const fontFamilies = {
   },
 } as const;
 
+const systemColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+let appliedNativeColorMode: ColorMode | undefined;
+
+function isColorMode(value: unknown): value is ColorMode {
+  return value === "system" || value === "light" || value === "dark";
+}
+
+function resolvedTheme(colorMode: ColorMode): "light" | "dark" {
+  return colorMode === "system" ? (systemColorScheme.matches ? "dark" : "light") : colorMode;
+}
+
 function numericPreference(value: unknown, fallback: number, minimum: number, maximum: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, Math.round(parsed))) : fallback;
@@ -345,6 +386,7 @@ function loadAppearancePreferences(): AppearancePreferences {
   try {
     const stored = JSON.parse(localStorage.getItem(appearanceStorageKey) ?? "{}") as Partial<AppearancePreferences>;
     return {
+      colorMode: isColorMode(stored.colorMode) ? stored.colorMode : defaultAppearancePreferences.colorMode,
       uiFont: stored.uiFont && stored.uiFont in fontFamilies.ui ? stored.uiFont : defaultAppearancePreferences.uiFont,
       headingFont:
         stored.headingFont && stored.headingFont in fontFamilies.heading
@@ -367,16 +409,33 @@ let appearancePreferences = loadAppearancePreferences();
 
 function applyAppearancePreferences(preferences: AppearancePreferences, persist = false): void {
   const root = document.documentElement;
+  const theme = resolvedTheme(preferences.colorMode);
+  root.dataset["theme"] = theme;
   root.style.setProperty("--ui-font-family", fontFamilies.ui[preferences.uiFont]);
   root.style.setProperty("--heading-font-family", fontFamilies.heading[preferences.headingFont]);
   root.style.setProperty("--mono-font-family", fontFamilies.mono[preferences.monoFont]);
   root.style.setProperty("--app-font-scale", String(preferences.interfaceScale / 100));
   root.style.setProperty("--heading-font-scale", String(preferences.headingScale / 100));
   root.style.setProperty("--code-font-scale", String(preferences.codeScale / 100));
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+    "content",
+    theme === "dark" ? "#0c1425" : "#f4f8ff",
+  );
+  if (appliedNativeColorMode !== preferences.colorMode) {
+    appliedNativeColorMode = preferences.colorMode;
+    void getCurrentWindow()
+      .setTheme(preferences.colorMode === "system" ? null : preferences.colorMode)
+      .catch(() => {});
+  }
   if (persist) localStorage.setItem(appearanceStorageKey, JSON.stringify(preferences));
 }
 
 function syncAppearanceControls(): void {
+  document.querySelectorAll<HTMLButtonElement>("[data-color-mode]").forEach((button) => {
+    const active = button.dataset["colorMode"] === appearancePreferences.colorMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
   $<HTMLSelectElement>("ui-font").value = appearancePreferences.uiFont;
   $<HTMLSelectElement>("heading-font").value = appearancePreferences.headingFont;
   $<HTMLSelectElement>("mono-font").value = appearancePreferences.monoFont;
@@ -391,7 +450,10 @@ function syncAppearanceControls(): void {
 function openPreferences(): void {
   syncAppearanceControls();
   $("preferences-overlay").classList.remove("hidden");
-  window.setTimeout(() => $<HTMLSelectElement>("ui-font").focus(), 0);
+  window.setTimeout(
+    () => document.querySelector<HTMLButtonElement>(`[data-color-mode="${appearancePreferences.colorMode}"]`)?.focus(),
+    0,
+  );
 }
 
 function closePreferences(): void {
@@ -400,6 +462,7 @@ function closePreferences(): void {
 
 function updateAppearancePreferences(): void {
   appearancePreferences = {
+    colorMode: appearancePreferences.colorMode,
     uiFont: $<HTMLSelectElement>("ui-font").value as AppearancePreferences["uiFont"],
     headingFont: $<HTMLSelectElement>("heading-font").value as AppearancePreferences["headingFont"],
     monoFont: $<HTMLSelectElement>("mono-font").value as AppearancePreferences["monoFont"],
@@ -412,6 +475,12 @@ function updateAppearancePreferences(): void {
 }
 
 applyAppearancePreferences(appearancePreferences);
+
+systemColorScheme.addEventListener("change", () => {
+  if (appearancePreferences.colorMode === "system") {
+    applyAppearancePreferences(appearancePreferences);
+  }
+});
 
 const templates: Record<string, object> = {
   default: { aps: { alert: { title: "PushLab", body: "这是一条测试推送" }, sound: "default", badge: 1 } },
@@ -1052,6 +1121,15 @@ $<HTMLInputElement>("certificate-passphrase").addEventListener("change", () => v
 for (const id of ["ui-font", "heading-font", "mono-font"]) {
   $<HTMLSelectElement>(id).addEventListener("change", updateAppearancePreferences);
 }
+document.querySelectorAll<HTMLButtonElement>("[data-color-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const colorMode = button.dataset["colorMode"];
+    if (!isColorMode(colorMode)) return;
+    appearancePreferences = { ...appearancePreferences, colorMode };
+    syncAppearanceControls();
+    applyAppearancePreferences(appearancePreferences, true);
+  });
+});
 for (const id of ["interface-scale", "heading-scale", "code-scale"]) {
   $<HTMLInputElement>(id).addEventListener("input", updateAppearancePreferences);
 }
