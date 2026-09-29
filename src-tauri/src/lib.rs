@@ -5,6 +5,8 @@ mod keychain;
 mod models;
 mod storage;
 
+use std::time::Instant;
+
 use tauri::{
     AppHandle, Emitter,
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
@@ -66,6 +68,7 @@ fn clear_device_token_history(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn send_push(app: AppHandle, request: PushRequest) -> Result<PushResult, String> {
+    let started_at = Instant::now();
     storage::save_settings(&app, &request.settings)?;
     storage::save_payload_history(&app, &request)?;
     storage::save_device_token_history(&app, &request)?;
@@ -79,7 +82,7 @@ async fn send_push(app: AppHandle, request: PushRequest) -> Result<PushResult, S
             reason_info: None,
             apns_id: String::new(),
             host,
-            duration_ms: 0,
+            duration_ms: started_at.elapsed().as_millis(),
             response_body: String::new(),
         },
     })
@@ -92,6 +95,13 @@ fn application_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         copyright: Some("Copyright © 2026 PushLab".into()),
         ..Default::default()
     };
+    let preferences = MenuItem::with_id(
+        app,
+        "open-preferences",
+        "偏好设置…",
+        true,
+        Some("CmdOrCtrl+,"),
+    )?;
     let check_update = MenuItem::with_id(app, "check-update", "检查更新…", true, None::<&str>)?;
     let app_menu = Submenu::with_items(
         app,
@@ -99,6 +109,8 @@ fn application_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         &[
             &PredefinedMenuItem::about(app, Some("关于 PushLab"), Some(about))?,
+            &PredefinedMenuItem::separator(app)?,
+            &preferences,
             &check_update,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::services(app, Some("服务"))?,
@@ -152,8 +164,14 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .menu(application_menu)
         .on_menu_event(|app, event| {
-            if event.id().as_ref() == "check-update" {
-                let _ = app.emit("pushlab://check-update", ());
+            match event.id().as_ref() {
+                "check-update" => {
+                    let _ = app.emit("pushlab://check-update", ());
+                }
+                "open-preferences" => {
+                    let _ = app.emit("pushlab://open-preferences", ());
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![

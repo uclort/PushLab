@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     fs,
     process::{Command, Stdio},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -224,10 +225,30 @@ fn keychain_client(request: &PushRequest) -> Result<Client, String> {
 
 fn token_client() -> Result<Client, String> {
     Client::builder()
-        .use_rustls_tls()
+        .use_native_tls()
         .timeout(Duration::from_secs(20))
         .build()
         .map_err(|error| format!("创建 APNs 连接失败：{error}"))
+}
+
+fn describe_request_error(error: &reqwest::Error) -> String {
+    if error.is_timeout() {
+        return "连接 APNs 超时（20 秒）".into();
+    }
+    let mut details = Vec::new();
+    let mut source = error.source();
+    while let Some(cause) = source {
+        let message = cause.to_string();
+        if !message.is_empty() && !details.contains(&message) {
+            details.push(message);
+        }
+        source = cause.source();
+    }
+    if details.is_empty() {
+        format!("连接 APNs 失败：{error}")
+    } else {
+        format!("连接 APNs 失败：{error}；底层原因：{}", details.join("；"))
+    }
 }
 
 pub async fn send_push(request: PushRequest) -> Result<PushResult, String> {
@@ -268,13 +289,7 @@ pub async fn send_push(request: PushRequest) -> Result<PushResult, String> {
         .body(settings.payload.clone())
         .send()
         .await
-        .map_err(|error| {
-            if error.is_timeout() {
-                "连接 APNs 超时（20 秒）".to_string()
-            } else {
-                format!("连接 APNs 失败：{error}")
-            }
-        })?;
+        .map_err(|error| describe_request_error(&error))?;
     let status = response.status().as_u16();
     let apns_id = response
         .headers()

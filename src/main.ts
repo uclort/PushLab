@@ -215,6 +215,70 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       </section>
     </main>
 
+    <div id="preferences-overlay" class="preferences-overlay hidden">
+      <section class="preferences-dialog" role="dialog" aria-modal="true" aria-labelledby="preferences-title">
+        <div class="preferences-heading">
+          <div>
+            <p>外观与字体</p>
+            <h2 id="preferences-title">偏好设置</h2>
+          </div>
+          <button id="close-preferences" class="preferences-close" aria-label="关闭偏好设置">×</button>
+        </div>
+
+        <div class="preferences-content">
+          <div class="preferences-font-grid">
+            <label>界面字体
+              <select id="ui-font">
+                <option value="avenir">Avenir Next</option>
+                <option value="pingfang">苹方</option>
+                <option value="system">macOS 系统字体</option>
+              </select>
+            </label>
+            <label>标题字体
+              <select id="heading-font">
+                <option value="avenir-condensed">Avenir Next Condensed</option>
+                <option value="avenir">Avenir Next</option>
+                <option value="pingfang">苹方</option>
+              </select>
+            </label>
+            <label>等宽字体
+              <select id="mono-font">
+                <option value="sfmono">SF Mono</option>
+                <option value="menlo">Menlo</option>
+                <option value="monaco">Monaco</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="preferences-scale-list">
+            <label class="scale-control">
+              <span><b>整体字号</b><output id="interface-scale-value">112%</output></span>
+              <input id="interface-scale" type="range" min="90" max="135" step="1" value="112" />
+            </label>
+            <label class="scale-control">
+              <span><b>标题字号</b><output id="heading-scale-value">100%</output></span>
+              <input id="heading-scale" type="range" min="90" max="135" step="1" value="100" />
+            </label>
+            <label class="scale-control">
+              <span><b>代码编辑器字号</b><output id="code-scale-value">105%</output></span>
+              <input id="code-scale" type="range" min="90" max="150" step="1" value="105" />
+            </label>
+          </div>
+
+          <div class="preferences-preview">
+            <span>界面文字预览</span>
+            <strong>APNs 推送调试工具</strong>
+            <code>{"aps":{"alert":"字体预览"}}</code>
+          </div>
+        </div>
+
+        <div class="preferences-actions">
+          <button id="reset-preferences" class="subtle-button">恢复默认</button>
+          <button id="done-preferences" class="toolbar-button">完成</button>
+        </div>
+      </section>
+    </div>
+
     <footer class="command-bar">
       <div class="command-summary">
         <span>READY TO DISPATCH</span>
@@ -224,7 +288,6 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <button id="send-button" class="send-button">
         <span class="send-orbit"></span>
         <span id="send-button-label">发送到 APNs</span>
-        <kbd>⌘ ↵</kbd>
       </button>
     </footer>
   </div>
@@ -235,6 +298,120 @@ const $ = <T extends HTMLElement>(id: string): T => {
   if (!element) throw new Error(`缺少界面元素：${id}`);
   return element as T;
 };
+
+type AppearancePreferences = {
+  uiFont: "avenir" | "pingfang" | "system";
+  headingFont: "avenir-condensed" | "avenir" | "pingfang";
+  monoFont: "sfmono" | "menlo" | "monaco";
+  interfaceScale: number;
+  headingScale: number;
+  codeScale: number;
+};
+
+const appearanceStorageKey = "pushlab-appearance-preferences";
+const defaultAppearancePreferences: AppearancePreferences = {
+  uiFont: "avenir",
+  headingFont: "avenir-condensed",
+  monoFont: "sfmono",
+  interfaceScale: 112,
+  headingScale: 100,
+  codeScale: 105,
+};
+
+const fontFamilies = {
+  ui: {
+    avenir: '"Avenir Next", "PingFang SC", sans-serif',
+    pingfang: '"PingFang SC", "Avenir Next", sans-serif',
+    system: '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif',
+  },
+  heading: {
+    "avenir-condensed": '"Avenir Next Condensed", "PingFang SC", sans-serif',
+    avenir: '"Avenir Next", "PingFang SC", sans-serif',
+    pingfang: '"PingFang SC", "Avenir Next", sans-serif',
+  },
+  mono: {
+    sfmono: '"SFMono-Regular", "SF Mono", Menlo, monospace',
+    menlo: 'Menlo, "SFMono-Regular", monospace',
+    monaco: 'Monaco, "SFMono-Regular", monospace',
+  },
+} as const;
+
+function numericPreference(value: unknown, fallback: number, minimum: number, maximum: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, Math.round(parsed))) : fallback;
+}
+
+function loadAppearancePreferences(): AppearancePreferences {
+  try {
+    const stored = JSON.parse(localStorage.getItem(appearanceStorageKey) ?? "{}") as Partial<AppearancePreferences>;
+    return {
+      uiFont: stored.uiFont && stored.uiFont in fontFamilies.ui ? stored.uiFont : defaultAppearancePreferences.uiFont,
+      headingFont:
+        stored.headingFont && stored.headingFont in fontFamilies.heading
+          ? stored.headingFont
+          : defaultAppearancePreferences.headingFont,
+      monoFont:
+        stored.monoFont && stored.monoFont in fontFamilies.mono
+          ? stored.monoFont
+          : defaultAppearancePreferences.monoFont,
+      interfaceScale: numericPreference(stored.interfaceScale, defaultAppearancePreferences.interfaceScale, 90, 135),
+      headingScale: numericPreference(stored.headingScale, defaultAppearancePreferences.headingScale, 90, 135),
+      codeScale: numericPreference(stored.codeScale, defaultAppearancePreferences.codeScale, 90, 150),
+    };
+  } catch {
+    return { ...defaultAppearancePreferences };
+  }
+}
+
+let appearancePreferences = loadAppearancePreferences();
+
+function applyAppearancePreferences(preferences: AppearancePreferences, persist = false): void {
+  const root = document.documentElement;
+  root.style.setProperty("--ui-font-family", fontFamilies.ui[preferences.uiFont]);
+  root.style.setProperty("--heading-font-family", fontFamilies.heading[preferences.headingFont]);
+  root.style.setProperty("--mono-font-family", fontFamilies.mono[preferences.monoFont]);
+  root.style.setProperty("--app-font-scale", String(preferences.interfaceScale / 100));
+  root.style.setProperty("--heading-font-scale", String(preferences.headingScale / 100));
+  root.style.setProperty("--code-font-scale", String(preferences.codeScale / 100));
+  if (persist) localStorage.setItem(appearanceStorageKey, JSON.stringify(preferences));
+}
+
+function syncAppearanceControls(): void {
+  $<HTMLSelectElement>("ui-font").value = appearancePreferences.uiFont;
+  $<HTMLSelectElement>("heading-font").value = appearancePreferences.headingFont;
+  $<HTMLSelectElement>("mono-font").value = appearancePreferences.monoFont;
+  $<HTMLInputElement>("interface-scale").value = String(appearancePreferences.interfaceScale);
+  $<HTMLInputElement>("heading-scale").value = String(appearancePreferences.headingScale);
+  $<HTMLInputElement>("code-scale").value = String(appearancePreferences.codeScale);
+  $("interface-scale-value").textContent = `${appearancePreferences.interfaceScale}%`;
+  $("heading-scale-value").textContent = `${appearancePreferences.headingScale}%`;
+  $("code-scale-value").textContent = `${appearancePreferences.codeScale}%`;
+}
+
+function openPreferences(): void {
+  syncAppearanceControls();
+  $("preferences-overlay").classList.remove("hidden");
+  window.setTimeout(() => $<HTMLSelectElement>("ui-font").focus(), 0);
+}
+
+function closePreferences(): void {
+  $("preferences-overlay").classList.add("hidden");
+}
+
+function updateAppearancePreferences(): void {
+  appearancePreferences = {
+    uiFont: $<HTMLSelectElement>("ui-font").value as AppearancePreferences["uiFont"],
+    headingFont: $<HTMLSelectElement>("heading-font").value as AppearancePreferences["headingFont"],
+    monoFont: $<HTMLSelectElement>("mono-font").value as AppearancePreferences["monoFont"],
+    interfaceScale: Number($<HTMLInputElement>("interface-scale").value),
+    headingScale: Number($<HTMLInputElement>("heading-scale").value),
+    codeScale: Number($<HTMLInputElement>("code-scale").value),
+  };
+  syncAppearanceControls();
+  applyAppearancePreferences(appearancePreferences, true);
+}
+
+applyAppearancePreferences(appearancePreferences);
 
 const templates: Record<string, object> = {
   default: { aps: { alert: { title: "PushLab", body: "这是一条测试推送" }, sound: "default", badge: 1 } },
@@ -632,6 +809,7 @@ function showResult(result: PushResult): void {
 
 async function send(): Promise<void> {
   if (sendButton.disabled) return;
+  const startedAt = performance.now();
   refreshPayloadState();
   if ($("payload-error").textContent) {
     payload.focus();
@@ -657,7 +835,7 @@ async function send(): Promise<void> {
       reason,
       apnsId: "",
       host: environment === "development" ? "api.sandbox.push.apple.com" : "api.push.apple.com",
-      durationMs: 0,
+      durationMs: Math.round(performance.now() - startedAt),
       responseBody: "",
     });
     setConnectionState("error", "发送失败", reason);
@@ -871,7 +1049,29 @@ document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textar
 
 $<HTMLInputElement>("certificate-passphrase").addEventListener("change", () => void refreshCredentialDetails());
 
+for (const id of ["ui-font", "heading-font", "mono-font"]) {
+  $<HTMLSelectElement>(id).addEventListener("change", updateAppearancePreferences);
+}
+for (const id of ["interface-scale", "heading-scale", "code-scale"]) {
+  $<HTMLInputElement>(id).addEventListener("input", updateAppearancePreferences);
+}
+$("close-preferences").addEventListener("click", closePreferences);
+$("done-preferences").addEventListener("click", closePreferences);
+$("reset-preferences").addEventListener("click", () => {
+  appearancePreferences = { ...defaultAppearancePreferences };
+  syncAppearanceControls();
+  applyAppearancePreferences(appearancePreferences, true);
+});
+$("preferences-overlay").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closePreferences();
+});
+
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("preferences-overlay").classList.contains("hidden")) {
+    event.preventDefault();
+    closePreferences();
+    return;
+  }
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
     event.preventDefault();
     void send();
@@ -894,6 +1094,8 @@ document.addEventListener(
 
 async function initialize(): Promise<void> {
   await listen("pushlab://check-update", () => void checkForUpdates());
+  await listen("pushlab://open-preferences", openPreferences);
+  syncAppearanceControls();
   try {
     const settings = await invoke<PushSettings>("load_settings");
     applySettings(settings);

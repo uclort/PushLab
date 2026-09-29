@@ -1,6 +1,6 @@
 [package]
 name = "pushlab"
-version = "0.2.3"
+version = "0.2.4"
 description = "PushLab APNs 调试工具"
 authors = ["Uclort"]
 edition = "2024"
@@ -21,7 +21,7 @@ core-foundation-sys = "0.8"
 http = "1"
 jsonwebtoken = { version = "10.4.0", default-features = false, features = ["rust_crypto", "use_pem"] }
 pem = "3"
-reqwest = { version = "0.12.28", default-features = false, features = ["http2", "json", "native-tls", "rustls-tls-native-roots", "system-proxy"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["http2", "json", "native-tls-alpn", "rustls-tls-native-roots", "system-proxy"] }
 security-framework = "3.7.0"
 security-framework-sys = "2.15.0"
 serde = { version = "1", features = ["derive"] }
