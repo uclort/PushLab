@@ -1,6 +1,6 @@
 {
   "name": "pushlab",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "基于 Tauri 的 APNs 推送调试工具",
   "type": "module",

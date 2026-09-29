@@ -196,7 +196,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 166px;
+  width: max-content;
 }
 
 .connection-state strong,
